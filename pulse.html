@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PULSE · BDG</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ── TOKENS BDG ── */
+:root{
+  --off:#FAF8F5;--cream:#F5F0E8;--cream2:#EDE6D6;--cream3:#E5DCC8;
+  --tan:#B89E7A;--camel:#8B6F47;--esp:#2A1A0A;--blk:#0D0804;
+  --text:#2A1A0A;--text2:#6B5040;--muted:#A89070;
+  --border:#DDD0B8;--border-l:#EDE6D6;
+  --pos:#3D6B3A;--pos-l:#EAF3E9;--neg:#8B2020;--neg-l:#F5EAEA;
+  --neu:#6B5C3A;--neu-l:#F0EBE0;--warn:#7A5C1E;--warn-l:#F5EDD6;
+  --fs:'EB Garamond',serif;--fu:'Jost',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{font-size:13px;}
+body{background:var(--off);color:var(--text);font-family:var(--fu);line-height:1.6;}
+
+/* ── LOGIN ── */
+#ls{position:fixed;inset:0;background:var(--blk);display:flex;align-items:center;justify-content:center;z-index:1000;}
+#ls.hidden{display:none;}
+.lb{width:340px;border:1px solid #2a1a08;background:#120c04;}
+.lt{padding:32px 32px 22px;border-bottom:1px solid #2a1a08;text-align:center;}
+.lwm{font-family:var(--fu);font-weight:600;font-size:11px;letter-spacing:.38em;text-transform:uppercase;color:var(--tan);margin-bottom:10px;}
+.lpulse{font-family:var(--fs);font-size:38px;font-weight:400;color:var(--cream);letter-spacing:.04em;line-height:1;font-style:italic;}
+.lsub{font-size:8.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);margin-top:8px;font-weight:500;}
+.lf{padding:24px 32px 28px;display:flex;flex-direction:column;gap:12px;}
+.lfield{display:flex;flex-direction:column;gap:5px;}
+.lfield label{font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:500;}
+.lfield input{background:#1a0e04;border:1px solid #3a2a14;color:var(--cream);padding:9px 12px;font-family:var(--fu);font-size:12px;outline:none;transition:border-color .2s;}
+.lfield input:focus{border-color:var(--camel);}
+.lfield input::placeholder{color:#4a3820;}
+.lbtn{background:var(--camel);color:var(--cream);border:none;padding:10px;font-family:var(--fu);font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;cursor:pointer;margin-top:4px;transition:background .2s;}
+.lbtn:hover{background:#a07850;}
+.lerr{font-size:9.5px;color:#c87070;letter-spacing:.06em;text-align:center;display:none;margin-top:-4px;}
+.lerr.show{display:block;}
+.lfoot{padding:12px 32px;border-top:1px solid #2a1a08;text-align:center;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#3a2a14;}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--blk);padding:6px 32px;display:flex;align-items:center;justify-content:space-between;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);}
+.live{width:5px;height:5px;border-radius:50%;background:#8fbe6a;animation:blink 2.5s ease-in-out infinite;display:inline-block;margin-right:7px;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── HEADER ── */
+header{padding:14px 32px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--cream);}
+.hl{display:flex;align-items:center;gap:16px;}
+.pname{font-family:var(--fs);font-size:22px;font-weight:400;font-style:italic;color:var(--esp);}
+.hdiv{width:1px;height:28px;background:var(--border);}
+.hbrand img{height:14px;width:auto;}
+.hsub{font-size:8.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-top:2px;}
+.hr{display:flex;align-items:center;gap:10px;}
+.ts{font-size:10px;color:var(--text2);}
+.btn{background:var(--blk);color:var(--cream);border:none;padding:7px 16px;font-family:var(--fu);font-size:9.5px;letter-spacing:.17em;text-transform:uppercase;font-weight:500;cursor:pointer;transition:background .2s;}
+.btn:hover{background:var(--esp);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.spin{animation:spin 1s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── LAYOUT ── */
+main{max-width:1300px;margin:0 auto;padding:0 32px 60px;}
+.sec{border-top:1px solid var(--border);padding-top:16px;margin-top:16px;}
+.sec-h{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;}
+.sec-t{font-family:var(--fs);font-size:14px;font-weight:600;color:var(--text);}
+.sec-s{font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:500;}
+
+/* ── KPI ROW ── */
+.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin:16px 0;}
+.kpi{background:var(--cream);padding:11px 13px 9px;}
+.kpi.hl2{background:var(--esp);}
+.kl{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:5px;}
+.hl2 .kl{color:var(--tan);}
+.kv{font-family:var(--fs);font-size:19px;font-weight:500;color:var(--text);line-height:1;margin-bottom:3px;}
+.hl2 .kv{color:var(--cream);}
+.ks{font-size:9.5px;color:var(--text2);}
+.hl2 .ks{color:var(--tan);}
+.bdg{display:inline-block;font-size:8px;letter-spacing:.06em;padding:2px 7px;margin-top:5px;font-weight:500;}
+.bdg.up{background:var(--pos-l);color:var(--pos);}
+.bdg.ne{background:var(--neu-l);color:var(--neu);}
+.bdg.dn{background:var(--neg-l);color:var(--neg);}
+.bdg.warn{background:var(--warn-l);color:var(--warn);}
+
+/* ── ROAS COMPARE ── */
+.rc{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:16px;}
+.rcc{background:var(--cream);padding:16px 18px;}
+.rcc.dk{background:var(--esp);}
+.rc-lbl{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:6px;}
+.dk .rc-lbl{color:var(--tan);}
+.rc-val{font-family:var(--fs);font-size:28px;font-weight:500;line-height:1;margin-bottom:5px;}
+.rc-sub{font-size:9.5px;color:var(--text2);line-height:1.5;}
+.dk .rc-sub{color:var(--tan);}
+.rc-def{font-size:9px;color:var(--muted);margin-top:6px;font-style:italic;line-height:1.5;}
+.dk .rc-def{color:#6B5040;}
+
+/* ── GRID 2 COL ── */
+.g2{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;margin-bottom:14px;}
+.card{background:var(--cream);border:1px solid var(--border);padding:12px 14px;}
+.ct{font-family:var(--fs);font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.cs{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;font-weight:500;}
+canvas{max-height:140px !important;}
+
+/* ── YEAR PILLS ── */
+.ypills{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;}
+.ypill{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--text2);font-weight:500;}
+.yline{width:14px;height:2px;border-radius:1px;}
+
+/* ── ROAS GRID ── */
+.rg{display:grid;grid-template-columns:82px repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);}
+.rgc{background:var(--cream);padding:9px 12px;text-align:center;}
+.rgc.hrow{background:var(--blk);color:var(--cream);font-size:8px;letter-spacing:.16em;text-transform:uppercase;font-weight:500;}
+.rgc.hcol{background:var(--cream2);text-align:left;font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--text2);font-weight:500;display:flex;align-items:center;}
+.rgv{font-family:var(--fs);font-size:14px;font-weight:600;line-height:1;margin-bottom:2px;}
+.rgs{font-size:8px;color:var(--muted);}
+.hi{color:var(--pos);}.mid{color:#A07850;}.lo{color:var(--neg);}.na{color:var(--muted);}
+
+/* ── SUMMARY ── */
+.ss{display:flex;flex-direction:column;}
+.sr{padding:9px 0;border-bottom:1px solid var(--border);}
+.sr:last-child{border-bottom:none;}
+.slb{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:3px;}
+.sv{font-family:var(--fs);font-size:16px;font-weight:600;line-height:1;}
+.sd{font-size:9.5px;color:var(--text2);margin-top:2px;}
+
+/* ── TABLE ── */
+.tw{border:1px solid var(--border);overflow:hidden;}
+table{width:100%;border-collapse:collapse;}
+thead{background:var(--blk);}
+thead th{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--cream);padding:8px 12px;text-align:left;font-weight:400;}
+thead th:not(:first-child){text-align:right;}
+tbody tr{border-bottom:1px solid var(--border-l);transition:background .1s;}
+tbody tr:hover{background:var(--cream2);}
+tbody tr:nth-child(even){background:var(--cream);}
+tbody tr:last-child{border-bottom:none;background:var(--cream3);}
+tbody td{padding:8px 12px;font-size:11px;}
+tbody td:not(:first-child){text-align:right;font-family:var(--fs);font-size:12px;}
+.mc{font-family:var(--fs);font-size:12px;font-weight:600;color:var(--text);}
+.my{font-family:var(--fu);font-size:8.5px;letter-spacing:.07em;color:var(--muted);display:block;margin-top:1px;}
+.mbw{display:flex;align-items:center;gap:6px;justify-content:flex-end;}
+.mbar{width:44px;height:2px;background:var(--border);border-radius:1px;overflow:hidden;}
+.mfill{height:100%;border-radius:1px;}
+
+/* ── RANKING TABS ── */
+.rtabs{display:flex;gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:16px;}
+.rtab{background:var(--cream);border:none;padding:9px 0;font-family:var(--fu);font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;color:var(--muted);cursor:pointer;transition:background .15s,color .15s;flex:1;text-align:center;}
+.rtab:hover{background:var(--cream2);color:var(--text);}
+.rtab.on{background:var(--blk);color:var(--cream);}
+
+/* ── GLOSARIO ACORDEON ── */
+.glos-sec{background:var(--blk);padding:36px 32px 40px;}
+.glos-inner{max-width:1300px;margin:0 auto;}
+.glos-hdr{display:flex;align-items:baseline;gap:14px;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid #2a1a08;}
+.glos-t{font-family:var(--fs);font-size:18px;font-weight:400;font-style:italic;color:var(--cream);}
+.glos-s{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);font-weight:500;}
+.glos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#2a1a08;}
+.gcard{background:#120c04;cursor:pointer;transition:background .15s;}
+.gcard:hover{background:#1a1008;}
+.gcard-hdr{padding:16px 20px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.gcl{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--tan);font-weight:500;margin-bottom:5px;}
+.gct{font-family:var(--fs);font-size:15px;font-weight:500;color:var(--cream);line-height:1.2;}
+.garr{font-size:13px;color:var(--muted);transition:transform .25s;flex-shrink:0;margin-top:4px;line-height:1;}
+.gbody{padding:0 20px;max-height:0;overflow:hidden;transition:max-height .35s ease,padding .35s;}
+.gbody.open{max-height:400px;padding-bottom:18px;}
+.gbody-txt{font-size:11px;color:#7a6545;line-height:1.65;}
+.gformula{font-size:10px;color:#3a2a14;margin-top:8px;font-style:italic;}
+
+/* ── FOOTER ── */
+footer{border-top:1px solid var(--border);padding:10px 32px;display:flex;justify-content:space-between;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+
+@media(max-width:960px){
+  .kpi-row{grid-template-columns:repeat(3,1fr);}
+  .g2,.rc{grid-template-columns:1fr;}
+  .glos-grid{grid-template-columns:1fr;}
+  main,header,.topbar,footer,.glos-sec{padding-left:16px;padding-right:16px;}
+  .rtab{font-size:8px;letter-spacing:.08em;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="ls">
+  <div class="lb">
+    <div class="lt">
+      <div class="lwm">Bala Di Gala</div>
+      <div class="lpulse">Pulse</div>
+      <div class="lsub">Performance Intelligence</div>
+    </div>
+    <div class="lf">
+      <div class="lfield">
+        <label>Contrase&ntilde;a</label>
+        <input type="password" id="pw" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password">
+      </div>
+      <div class="lerr" id="perr">Contrase&ntilde;a incorrecta</div>
+      <button class="lbtn" onclick="tryLogin()">Ingresar</button>
+    </div>
+    <div class="lfoot">Acceso restringido &middot; Uso interno</div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app" style="display:none">
+
+<div class="topbar">
+  <span>PULSE &middot; Performance Intelligence &middot; BDG</span>
+  <span><span class="live"></span><span id="upd">&mdash;</span></span>
+</div>
+
+<header>
+  <div class="hl">
+    <div class="pname">Pulse</div>
+    <div class="hdiv"></div>
+    <div class="hbrand">
+      <img src="https://baladigala.com/cdn/shop/files/TIPOGRAFIA_0eeef2c9-8447-407e-940f-5d63c2a8467c.webp?v=1737764437&width=610" alt="BALA DI GALA">
+      <div class="hsub">Dic 2025 &ndash; 18 Mar 2026 &middot; MXN</div>
+    </div>
+  </div>
+  <div class="hr">
+    <span class="ts" id="ds"></span>
+    <button class="btn" id="btnR" onclick="doRefresh()"><span id="ri">&#8635;</span>&nbsp;Actualizar</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- KPIs -->
+  <div class="kpi-row" id="kpis"></div>
+
+  <!-- ROAS COMPARE -->
+  <div class="sec">
+    <div class="sec-h">
+      <div class="sec-t">ROAS &mdash; Meta vs Online</div>
+      <div class="sec-s">Dos formas de medir el retorno publicitario</div>
+    </div>
+    <div class="rc" id="rcmp"></div>
+  </div>
+
+  <!-- ROAS HISTORICO -->
+  <div class="sec">
+    <div class="sec-h">
+      <div class="sec-t">ROAS Meta Ads &mdash; Comparativo hist&oacute;rico</div>
+      <div class="sec-s">Mismos meses &middot; 2023&ndash;2026</div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="ct">Evoluci&oacute;n mensual &middot; 4 a&ntilde;os</div>
+        <div class="cs">Revenue atribuido / Spend &middot; Pixel Meta</div>
+        <div class="ypills" id="ypills"></div>
+        <canvas id="cR"></canvas>
+      </div>
+      <div class="card">
+        <div class="ct">ROAS diario &middot; Marzo 2026</div>
+        <div class="cs">1&ndash;18 Mar &middot; en curso</div>
+        <canvas id="cD"></canvas>
+      </div>
+    </div>
+    <div id="rgW"></div>
+  </div>
+
+  <!-- RENTABILIDAD -->
+  <div class="sec">
+    <div class="sec-h">
+      <div class="sec-t">Rentabilidad bruta</div>
+      <div class="sec-s">Shopify &middot; Ventas &minus; COGS</div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="ct">Ventas &middot; COGS &middot; Ganancia bruta mensual</div>
+        <div class="cs">Shopify &middot; todas las &oacute;rdenes &middot; MXN</div>
+        <canvas id="cRe"></canvas>
+      </div>
+      <div class="card">
+        <div class="ct">Resumen acumulado</div>
+        <div class="cs">Dic 2025 &ndash; Mar 2026</div>
+        <div class="ss" id="ss"></div>
+      </div>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th>Mes</th><th>Ventas totales</th><th>Online Store</th>
+          <th>COGS</th><th>G. Bruta</th><th>Margen</th>
+          <th>Meta Spend</th><th>ROAS Meta</th><th>ROAS Online</th><th>Profit Neto</th>
+        </tr></thead>
+        <tbody id="rb"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TOP 5 PRODUCTOS -->
+  <div class="sec">
+    <div class="sec-h">
+      <div class="sec-t">Top 5 productos</div>
+      <div class="sec-s">Online Store &middot; por unidades vendidas</div>
+    </div>
+    <!-- Tabs -->
+    <div class="rtabs">
+      <button class="rtab on"  onclick="setTab(0)" id="t0">Mar &middot; Online</button>
+      <button class="rtab"     onclick="setTab(1)" id="t1">YTD &middot; Online</button>
+      <button class="rtab"     onclick="setTab(2)" id="t2">Mar &middot; Todos</button>
+      <button class="rtab"     onclick="setTab(3)" id="t3">YTD &middot; Todos</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);" id="top5g"></div>
+    <div id="rnote" style="font-size:9px;color:var(--muted);margin-top:8px;font-style:italic;"></div>
+  </div>
+
+</main>
+
+<!-- ══ GLOSARIO ══ -->
+<section class="glos-sec">
+  <div class="glos-inner">
+    <div class="glos-hdr">
+      <span class="glos-t">Glosario</span>
+      <span class="glos-s">Definici&oacute;n de m&eacute;tricas &middot; PULSE</span>
+    </div>
+    <div class="glos-grid">
+
+      <div class="gcard" onclick="tog('g1')">
+        <div class="gcard-hdr">
+          <div><div class="gcl">Gasto Meta</div><div class="gct">Inversi&oacute;n publicitaria</div></div>
+          <span class="garr" id="a_g1">+</span>
+        </div>
+        <div class="gbody" id="g1">
+          <div class="gbody-txt">Total gastado en campa&ntilde;as de Meta Ads (Facebook e Instagram) en el per&iacute;odo. Es el costo real debitado a la cuenta publicitaria, sin importar el resultado de las campa&ntilde;as.</div>
+        </div>
+      </div>
+
+      <div class="gcard" onclick="tog('g2')">
+        <div class="gcard-hdr">
+          <div><div class="gcl">ROAS Meta</div><div class="gct">Revenue atribuido &divide; Spend</div></div>
+          <span class="garr" id="a_g2">+</span>
+        </div>
+        <div class="gbody" id="g2">
+          <div class="gbody-txt">Lo que Meta reporta haber generado por cada peso invertido, seg&uacute;n su pixel de seguimiento. Puede sobreestimar porque atribuye conversiones a m&uacute;ltiples puntos de contacto — incluye ventas de todos los canales que tuvieron contacto con un anuncio.</div>
+          <div class="gformula">F&oacute;rmula: Revenue pixel Meta &divide; Inversi&oacute;n Meta</div>
+        </div>
+      </div>
+
+      <div class="gcard" onclick="tog('g3')" style="background:#1a0e04;border-left:2px solid var(--camel);">
+        <div class="gcard-hdr">
+          <div><div class="gcl">ROAS Online &#9733;</div><div class="gct">Ventas reales &divide; Spend</div></div>
+          <span class="garr" id="a_g3">+</span>
+        </div>
+        <div class="gbody" id="g3">
+          <div class="gbody-txt">Cu&aacute;nto se vendi&oacute; en la tienda online (baladigala.com, canal Online Store de Shopify) dividido entre lo que se gast&oacute; en Meta. La m&eacute;trica m&aacute;s conservadora y verificable: solo ventas cerradas y confirmadas, sin atribuci&oacute;n del pixel. La m&aacute;s honesta de las dos.</div>
+          <div class="gformula">F&oacute;rmula: Ventas Online Store Shopify &divide; Inversi&oacute;n Meta</div>
+        </div>
+      </div>
+
+      <div class="gcard" onclick="tog('g4')">
+        <div class="gcard-hdr">
+          <div><div class="gcl">COGS</div><div class="gct">Costo de producto vendido</div></div>
+          <span class="garr" id="a_g4">+</span>
+        </div>
+        <div class="gbody" id="g4">
+          <div class="gbody-txt">Cost of Goods Sold. El costo directo de fabricaci&oacute;n de los pares vendidos. No incluye publicidad, env&iacute;os ni gastos operativos. Viene de Shopify (costo de inventario por variante registrado en el sistema).</div>
+        </div>
+      </div>
+
+      <div class="gcard" onclick="tog('g5')">
+        <div class="gcard-hdr">
+          <div><div class="gcl">Ganancia Bruta</div><div class="gct">Ventas &minus; COGS</div></div>
+          <span class="garr" id="a_g5">+</span>
+        </div>
+        <div class="gbody" id="g5">
+          <div class="gbody-txt">Lo que queda despu&eacute;s de restar el costo del producto a las ventas totales. Refleja el margen antes de descontar publicidad, log&iacute;stica u otros gastos operativos. El margen bruto (%) indica la eficiencia del modelo de producto.</div>
+          <div class="gformula">F&oacute;rmula: Ventas totales &minus; COGS</div>
+        </div>
+      </div>
+
+      <div class="gcard" onclick="tog('g6')">
+        <div class="gcard-hdr">
+          <div><div class="gcl">Profit Neto</div><div class="gct">Ganancia bruta &minus; Meta Spend</div></div>
+          <span class="garr" id="a_g6">+</span>
+        </div>
+        <div class="gbody" id="g6">
+          <div class="gbody-txt">Lo que queda despu&eacute;s de restar el gasto publicitario en Meta a la ganancia bruta. Rentabilidad del negocio considerando solo costo de producto y publicidad digital — no incluye log&iacute;stica, personal ni renta.</div>
+          <div class="gformula">F&oacute;rmula: (Ventas &minus; COGS) &minus; Inversi&oacute;n Meta</div>
+        </div>
+      </div>
+
+      <div class="gcard" onclick="tog('g7')">
+        <div class="gcard-hdr">
+          <div><div class="gcl">Margen Bruto %</div><div class="gct">Eficiencia del producto</div></div>
+          <span class="garr" id="a_g7">+</span>
+        </div>
+        <div class="gbody" id="g7">
+          <div class="gbody-txt">Porcentaje de cada peso vendido que queda despu&eacute;s del costo de producto. Un margen del 55% significa que por cada $100 vendidos, $55 son ganancia bruta antes de publicidad y operaci&oacute;n. BDG apunta a mantenerlo por encima del 45%.</div>
+          <div class="gformula">F&oacute;rmula: Ganancia bruta &divide; Ventas totales &times; 100</div>
+        </div>
+      </div>
+
+      <div class="gcard" onclick="tog('g8')">
+        <div class="gcard-hdr">
+          <div><div class="gcl">ROAS Meta vs Online</div><div class="gct">&iquest;Cu&aacute;l creer?</div></div>
+          <span class="garr" id="a_g8">+</span>
+        </div>
+        <div class="gbody" id="g8">
+          <div class="gbody-txt">ROAS Meta siempre ser&aacute; mayor porque atribuye m&aacute;s ventas v&iacute;a pixel. ROAS Online es m&aacute;s bajo pero m&aacute;s real. La brecha entre ambos indica cu&aacute;nto est&aacute; &ldquo;inflando&rdquo; el pixel de Meta el retorno. Si el ROAS Online es rentable, la campa&ntilde;a funciona.</div>
+        </div>
+      </div>
+
+      <div class="gcard" onclick="tog('g9')">
+        <div class="gcard-hdr">
+          <div><div class="gcl">Fuentes de datos</div><div class="gct">De d&oacute;nde viene cada n&uacute;mero</div></div>
+          <span class="garr" id="a_g9">+</span>
+        </div>
+        <div class="gbody" id="g9">
+          <div class="gbody-txt">
+            <strong style="color:var(--tan)">Meta Ads</strong> &rarr; Windsor.ai (pixel, gasto, revenue atribuido)<br><br>
+            <strong style="color:var(--tan)">Ventas totales Shopify</strong> &rarr; Windsor.ai (todas las &oacute;rdenes, todos los canales)<br><br>
+            <strong style="color:var(--tan)">Online Store</strong> &rarr; Shopify Pulse Analytics (ventas netas canal web &mdash; Enero: n&uacute;mero completo de Pulse; Feb&ndash;Mar: Windsor)<br><br>
+            <strong style="color:var(--tan)">COGS</strong> &rarr; Shopify (costo de inventario por variante)
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /glos-grid -->
+  </div>
+</section>
+
+<footer>
+  <span>Bala Di Gala &middot; Hand Detail SA de CV</span>
+  <span>PULSE &middot; Windsor.ai &middot; Meta Ads &middot; Shopify &middot; MXN</span>
+</footer>
+
+</div><!-- /app -->
+
+<script>
+// ══ AUTH ══
+const PASS='cincuentamillones2026';
+function tryLogin(){
+  const v=document.getElementById('pw').value,e=document.getElementById('perr');
+  if(v===PASS){
+    document.getElementById('ls').classList.add('hidden');
+    document.getElementById('app').style.display='block';
+    init();
+  } else {
+    e.classList.add('show');
+    document.getElementById('pw').value='';
+    document.getElementById('pw').focus();
+    setTimeout(()=>e.classList.remove('show'),2500);
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!document.getElementById('ls').classList.contains('hidden'))tryLogin();
+});
+window.addEventListener('DOMContentLoaded',()=>document.getElementById('pw').focus());
+
+// ══ META ADS (Dic 2025 – Mar 2026) ══
+const META=[{d:"2025-12-01",sp:8436.2,rv:69163.2,rs:8.20},{d:"2025-12-02",sp:7518.73,rv:96679.58,rs:12.86},{d:"2025-12-03",sp:7562.78,rv:23198.9,rs:3.07},{d:"2025-12-04",sp:8211.56,rv:27220.53,rs:3.31},{d:"2025-12-05",sp:8128.7,rv:30351.5,rs:3.73},{d:"2025-12-06",sp:7878.46,rv:24996,rs:3.17},{d:"2025-12-07",sp:9404.31,rv:32806.03,rs:3.49},{d:"2025-12-08",sp:8431.35,rv:23179.25,rs:2.75},{d:"2025-12-09",sp:9056.83,rv:41782.5,rs:4.61},{d:"2025-12-10",sp:8318.75,rv:52989.15,rs:6.37},{d:"2025-12-11",sp:7098.34,rv:29828.13,rs:4.20},{d:"2025-12-12",sp:6915.57,rv:43010.05,rs:6.22},{d:"2025-12-13",sp:7084.75,rv:11085.3,rs:1.56},{d:"2025-12-14",sp:8555.45,rv:21522.8,rs:2.52},{d:"2025-12-15",sp:9404.76,rv:45667.78,rs:4.86},{d:"2025-12-16",sp:9403.47,rv:32746.35,rs:3.48},{d:"2025-12-17",sp:8312.88,rv:34983.35,rs:4.21},{d:"2025-12-18",sp:8008.19,rv:40975.75,rs:5.12},{d:"2025-12-19",sp:7902.57,rv:21894.8,rs:2.77},{d:"2025-12-20",sp:7927.42,rv:20810.5,rs:2.63},{d:"2025-12-21",sp:9023.2,rv:19245.95,rs:2.13},{d:"2025-12-22",sp:8465.55,rv:25849.6,rs:3.05},{d:"2025-12-23",sp:8096.92,rv:28848.3,rs:3.56},{d:"2025-12-24",sp:7516.7,rv:26450.75,rs:3.52},{d:"2025-12-25",sp:8937.63,rv:23099.35,rs:2.58},{d:"2025-12-26",sp:7629.31,rv:28132.88,rs:3.69},{d:"2025-12-27",sp:7888.07,rv:34220.1,rs:4.34},{d:"2025-12-28",sp:8795.27,rv:53986.95,rs:6.14},{d:"2025-12-29",sp:8584.82,rv:38252.95,rs:4.46},{d:"2025-12-30",sp:8364.64,rv:50151.65,rs:6.00},{d:"2025-12-31",sp:7207.86,rv:33290.2,rs:4.62},{d:"2026-01-01",sp:8857.9,rv:27563.25,rs:3.11},{d:"2026-01-02",sp:7715.37,rv:22365,rs:2.90},{d:"2026-01-03",sp:8035.93,rv:35723.55,rs:4.45},{d:"2026-01-04",sp:9034.7,rv:35593,rs:3.94},{d:"2026-01-05",sp:8012.41,rv:21782.5,rs:2.72},{d:"2026-01-06",sp:8500.76,rv:40394.35,rs:4.75},{d:"2026-01-07",sp:8020.62,rv:25428.75,rs:3.17},{d:"2026-01-08",sp:8016.15,rv:29205.5,rs:3.64},{d:"2026-01-09",sp:8178.29,rv:48081.69,rs:5.88},{d:"2026-01-10",sp:7798.04,rv:36148.4,rs:4.64},{d:"2026-01-11",sp:9014.32,rv:27817.98,rs:3.09},{d:"2026-01-12",sp:8434.72,rv:29771.98,rs:3.53},{d:"2026-01-13",sp:8045.16,rv:35872.15,rs:4.46},{d:"2026-01-14",sp:8183.35,rv:33237.6,rs:4.06},{d:"2026-01-15",sp:7974.7,rv:33584.88,rs:4.21},{d:"2026-01-16",sp:7892.7,rv:36081.6,rs:4.57},{d:"2026-01-17",sp:8012.79,rv:44027.85,rs:5.49},{d:"2026-01-18",sp:9334.9,rv:45739.13,rs:4.90},{d:"2026-01-19",sp:8316.88,rv:23081.35,rs:2.78},{d:"2026-01-20",sp:7919.87,rv:29627.25,rs:3.74},{d:"2026-01-21",sp:8041.26,rv:21981.5,rs:2.73},{d:"2026-01-22",sp:7952.89,rv:38412.43,rs:4.83},{d:"2026-01-23",sp:7953.68,rv:38805.94,rs:4.88},{d:"2026-01-24",sp:8040.29,rv:39179.28,rs:4.87},{d:"2026-01-25",sp:9107.48,rv:32087.28,rs:3.52},{d:"2026-01-26",sp:8140.11,rv:20967.08,rs:2.58},{d:"2026-01-27",sp:8212.15,rv:36007.95,rs:4.38},{d:"2026-01-28",sp:8071.22,rv:36438.05,rs:4.51},{d:"2026-01-29",sp:7972.14,rv:30219.55,rs:3.79},{d:"2026-01-30",sp:8246.93,rv:49052.08,rs:5.95},{d:"2026-01-31",sp:7780.03,rv:19689.7,rs:2.53},{d:"2026-02-01",sp:9056.4,rv:47091.83,rs:5.20},{d:"2026-02-02",sp:8459.79,rv:31585.2,rs:3.73},{d:"2026-02-03",sp:7993.73,rv:35332.25,rs:4.42},{d:"2026-02-04",sp:8477.14,rv:24133.28,rs:2.85},{d:"2026-02-05",sp:9040.6,rv:27351.84,rs:3.03},{d:"2026-02-06",sp:8895.13,rv:14704.22,rs:1.65},{d:"2026-02-07",sp:8940.21,rv:25298.53,rs:2.83},{d:"2026-02-08",sp:9595.94,rv:18482.83,rs:1.93},{d:"2026-02-09",sp:9426.78,rv:21730.4,rs:2.31},{d:"2026-02-10",sp:9335.26,rv:25738.33,rs:2.76},{d:"2026-02-11",sp:8546.69,rv:28853.8,rs:3.38},{d:"2026-02-12",sp:8337.42,rv:20500.98,rs:2.46},{d:"2026-02-13",sp:9072.22,rv:30335.25,rs:3.34},{d:"2026-02-14",sp:9034.96,rv:35064.35,rs:3.88},{d:"2026-02-15",sp:10940.33,rv:25882.1,rs:2.37},{d:"2026-02-16",sp:9111.32,rv:32344.7,rs:3.55},{d:"2026-02-17",sp:8164.12,rv:30068.03,rs:3.68},{d:"2026-02-18",sp:5905.6,rv:10578.1,rs:1.79},{d:"2026-02-19",sp:6508.75,rv:9692.6,rs:1.49},{d:"2026-02-20",sp:7690.37,rv:7064.4,rs:0.92},{d:"2026-02-21",sp:9063.95,rv:25006.21,rs:2.76},{d:"2026-02-22",sp:12190.57,rv:12557.4,rs:1.03},{d:"2026-02-23",sp:8567.39,rv:24129.94,rs:2.82},{d:"2026-02-24",sp:6383.33,rv:15407.75,rs:2.41},{d:"2026-02-25",sp:6345.7,rv:8942.13,rs:1.41},{d:"2026-02-26",sp:11136.91,rv:10073.48,rs:0.90},{d:"2026-02-27",sp:17203.18,rv:22897.01,rs:1.33},{d:"2026-02-28",sp:16890.79,rv:32382.3,rs:1.92},{d:"2026-03-01",sp:12309.63,rv:30819.1,rs:2.50},{d:"2026-03-02",sp:10702.77,rv:21816.2,rs:2.04},{d:"2026-03-03",sp:9899.29,rv:19631.3,rs:1.98},{d:"2026-03-04",sp:10095.38,rv:29452.65,rs:2.92},{d:"2026-03-05",sp:8298.34,rv:21691.76,rs:2.61},{d:"2026-03-06",sp:9165.14,rv:47811.83,rs:5.22},{d:"2026-03-07",sp:9066.57,rv:27828.08,rs:3.07},{d:"2026-03-08",sp:9601.47,rv:32799.5,rs:3.42},{d:"2026-03-09",sp:9263.01,rv:16301.9,rs:1.76},{d:"2026-03-10",sp:8614.92,rv:10309.75,rs:1.20},{d:"2026-03-11",sp:6877.56,rv:8871,rs:1.29},{d:"2026-03-12",sp:6715.61,rv:29029.68,rs:4.32},{d:"2026-03-13",sp:6728.38,rv:5076.18,rs:0.75},{d:"2026-03-14",sp:6794.96,rv:4681,rs:0.69},{d:"2026-03-15",sp:5273.1,rv:23757.45,rs:4.51},{d:"2026-03-16",sp:5932.76,rv:30199.49,rs:5.09},{d:"2026-03-17",sp:4709.53,rv:4740.5,rs:1.01},{d:"2026-03-18",sp:1765.79,rv:10105,rs:5.72}];
+
+// ══ SHOPIFY — TODOS LOS CANALES (COGS + ventas totales) ══
+const SH=[{d:"2026-01-17",s:39020.59,c:12918.4},{d:"2026-01-18",s:51277.99,c:16971.2},{d:"2026-01-19",s:44643.77,c:16163.7},{d:"2026-01-20",s:104802.82,c:45814.8},{d:"2026-01-21",s:137619.13,c:47947.6},{d:"2026-01-22",s:119977.61,c:44405.5},{d:"2026-01-23",s:114576.12,c:41984.7},{d:"2026-01-24",s:54418.53,c:24356.5},{d:"2026-01-25",s:46150.58,c:16621.7},{d:"2026-01-26",s:31922.83,c:12238.5},{d:"2026-01-27",s:23405.86,c:8537.2},{d:"2026-01-28",s:865875.83,c:564478},{d:"2026-01-29",s:79421.39,c:27589.1},{d:"2026-01-30",s:124535.91,c:51367.5},{d:"2026-01-31",s:129295.03,c:44311.4},{d:"2026-02-01",s:64699.83,c:23403.7},{d:"2026-02-02",s:80218.91,c:26495.9},{d:"2026-02-03",s:112791.84,c:67965.9},{d:"2026-02-04",s:66691.8,c:25710.2},{d:"2026-02-05",s:49405.1,c:13674.1},{d:"2026-02-06",s:28389.82,c:9200.7},{d:"2026-02-07",s:38875.15,c:12717.9},{d:"2026-02-08",s:33997.2,c:11829.4},{d:"2026-02-09",s:130432.31,c:60048.6},{d:"2026-02-10",s:88196.72,c:32528},{d:"2026-02-11",s:77908.89,c:26843.3},{d:"2026-02-12",s:97266.72,c:37329.5},{d:"2026-02-13",s:110542.29,c:95724.3},{d:"2026-02-14",s:66675.2,c:27061.4},{d:"2026-02-15",s:32651.56,c:11707.6},{d:"2026-02-16",s:75627.68,c:20629.5},{d:"2026-02-17",s:187394.74,c:83755.8},{d:"2026-02-18",s:53496.15,c:17002.2},{d:"2026-02-19",s:55321.73,c:17469.1},{d:"2026-02-20",s:77847.06,c:28763.5},{d:"2026-02-21",s:72468.67,c:29430.2},{d:"2026-02-22",s:29574.08,c:12522.8},{d:"2026-02-23",s:53008.39,c:25622.6},{d:"2026-02-24",s:37756.75,c:12321.6},{d:"2026-02-25",s:27296.06,c:10499.7},{d:"2026-02-26",s:26111.18,c:9000.5},{d:"2026-02-27",s:89373.77,c:29809.7},{d:"2026-02-28",s:55153.86,c:16687.5},{d:"2026-03-01",s:80674.7,c:23061},{d:"2026-03-02",s:51173.64,c:18077.6},{d:"2026-03-03",s:67872.67,c:27681},{d:"2026-03-04",s:58589.81,c:18908.1},{d:"2026-03-05",s:156151.13,c:66316.5},{d:"2026-03-06",s:73475.94,c:19047.8},{d:"2026-03-07",s:76126.83,c:25998.6},{d:"2026-03-08",s:68978.6,c:23774.9},{d:"2026-03-09",s:32979.32,c:7855.4},{d:"2026-03-10",s:95602.62,c:42124.7},{d:"2026-03-11",s:103762.25,c:40364.3},{d:"2026-03-12",s:88316.38,c:34565.9},{d:"2026-03-13",s:110836.77,c:56239.5},{d:"2026-03-14",s:72329.46,c:25373.1},{d:"2026-03-15",s:60464.1,c:23785.4},{d:"2026-03-16",s:74487.39,c:25670.7},{d:"2026-03-17",s:56887.5,c:24708.5},{d:"2026-03-18",s:18205.5,c:3467}];
+
+// ══ VENTAS ONLINE STORE (para ROAS Online) ══
+// Ene: $1,117,101.83 de Shopify Pulse (Windsor solo cubre 17-31 ene)
+// Feb/Mar: Windsor filtrado canal "Online Store"
+const ON={
+  '2026-01':1117101.83,
+  '2026-02':756261.23,
+  '2026-03':456061.04
+};
+
+// ══ ROAS HISTORICO ══
+const HIST={
+  roas:{'2026':{Dic:4.28,Ene:3.94,Feb:2.62,Mar:2.71},'2025':{Dic:4.28,Ene:3.62,Feb:5.81,Mar:5.75},'2024':{Dic:5.61,Ene:5.04,Feb:8.72,Mar:6.59},'2023':{Dic:6.86,Ene:null,Feb:null,Mar:null}},
+  spend:{'2026':{Dic:254071,Ene:252260,Feb:253866,Mar:141814},'2025':{Dic:254071,Ene:156681,Feb:124587,Mar:151158},'2024':{Dic:168049,Ene:139798,Feb:86530,Mar:115358},'2023':{Dic:121246,Ene:null,Feb:null,Mar:null}}
+};
+
+// ══ RANKINGS TOP 5 ══
+const RNKS=[
+  {label:'Mar · Online Store', note:'Marzo 2026 · solo canal baladigala.com · 209 uds totales', total:209, items:[
+    {r:1,t:'PENNY TAUPE CLOGS',      q:48,  p:23.0,pid:'8890681950465',h:'penny-taupe-clogs'},
+    {r:2,t:'PENNY CLOGS',            q:46,  p:22.0,pid:'8995493871873',h:'penny-clogs'},
+    {r:3,t:'PENNY BROWN CLOGS',      q:21,  p:10.0,pid:'8890758463745',h:'penny-brown-clogs'},
+    {r:4,t:'PENNY OLIVE GREEN CLOGS',q:16,  p:7.7, pid:'8930134556929',h:'penny-olive-green-clogs'},
+    {r:5,t:'FENIX CHOCOLATE',        q:16,  p:7.7, pid:'8610346991873',h:'fenix-chocolate'},
+  ]},
+  {label:'YTD · Online Store', note:'Ene–Mar 2026 · solo canal baladigala.com · 1,028 uds totales (Enero desde el d&#237;a 17)', total:1028, items:[
+    {r:1,t:'PENNY TAUPE CLOGS',      q:497, p:48.3,pid:'8890681950465',h:'penny-taupe-clogs'},
+    {r:2,t:'PENNY BROWN CLOGS',      q:120, p:11.7,pid:'8890758463745',h:'penny-brown-clogs'},
+    {r:3,t:'PENNY BLACK SUEDE',      q:77,  p:7.5, pid:'8959882559745',h:'penny-black-suede'},
+    {r:4,t:'PENNY OLIVE GREEN CLOGS',q:64,  p:6.2, pid:'8930134556929',h:'penny-olive-green-clogs'},
+    {r:5,t:'PENNY CLOGS',            q:46,  p:4.5, pid:'8995493871873',h:'penny-clogs'},
+  ]},
+  {label:'Mar · Todos los canales', note:'Marzo 2026 · Online Store + TikTok Shop + POS + Yuju · 1,076 uds totales', total:1076, items:[
+    {r:1,t:'PENNY CLOGS',            q:699, p:65.0,pid:'8995493871873',h:'penny-clogs'},
+    {r:2,t:'FRANKIE CLOGS',          q:61,  p:5.7, pid:'9085727179009',h:'frankie-clogs'},
+    {r:3,t:'PENNY PONY CLOGS',       q:56,  p:5.2, pid:'8930134458625',h:'penny-pony-clogs'},
+    {r:4,t:'PENNY TAUPE CLOGS',      q:48,  p:4.5, pid:'8890681950465',h:'penny-taupe-clogs'},
+    {r:5,t:'PARKER CLOGS',           q:36,  p:3.3, pid:'8995512221953',h:'parker-clogs'},
+  ]},
+  {label:'YTD · Todos los canales', note:'Ene–Mar 2026 · todos los canales Shopify · 3,383 uds totales', total:3383, items:[
+    {r:1,t:'PENNY CLOGS',            q:1890,p:55.9,pid:'8995493871873',h:'penny-clogs'},
+    {r:2,t:'PENNY TAUPE CLOGS',      q:497, p:14.7,pid:'8890681950465',h:'penny-taupe-clogs'},
+    {r:3,t:'PENNY BROWN CLOGS',      q:120, p:3.5, pid:'8890758463745',h:'penny-brown-clogs'},
+    {r:4,t:'PENNY BLACK SUEDE',      q:77,  p:2.3, pid:'8959882559745',h:'penny-black-suede'},
+    {r:5,t:'PENNY OLIVE GREEN CLOGS',q:64,  p:1.9, pid:'8930134556929',h:'penny-olive-green-clogs'},
+  ]},
+];
+let curTab=0;
+
+// ══ HELPERS ══
+const C={blk:'#0D0804',camel:'#8B6F47',warm:'#A07850',meta:'#3d5a99',pos:'#3D6B3A',neg:'#8B2020',muted:'#A89070'};
+const COLORS=['#8B6F47','#A07850','#B89E7A','#C4AA8A','#D4C4A8'];
+const f=n=>{if(n===null||n===undefined||isNaN(n))return'&mdash;';if(Math.abs(n)>=1e6)return'$'+(n/1e6).toFixed(2)+'M';if(Math.abs(n)>=1e3)return'$'+(n/1e3).toFixed(0)+'k';return'$'+n.toFixed(0);};
+const fp=n=>(!n||isNaN(n))?'&mdash;':(n*100).toFixed(1)+'%';
+const fr=n=>(!n||isNaN(n)||!isFinite(n))?'&mdash;':n.toFixed(2)+'x';
+const hc=v=>v===null?'na':v>=3.5?'hi':v>=2.5?'mid':'lo';
+const hcol=v=>v===null?C.muted:v>=3.5?C.pos:v>=2.5?C.warm:C.neg;
+function aggM(a){return a.reduce((o,r)=>{const k=r.d.slice(0,7);o[k]=o[k]||{sp:0,rv:0};o[k].sp+=r.sp;o[k].rv+=r.rv;return o;},{});}
+function aggS(a){return a.reduce((o,r)=>{const k=r.d.slice(0,7);o[k]=o[k]||{s:0,c:0};o[k].s+=r.s;o[k].c+=r.c;return o;},{});}
+
+const MONTHS=['2025-12','2026-01','2026-02','2026-03'];
+const ML={'2025-12':'Dic 25','2026-01':'Ene 26','2026-02':'Feb 26','2026-03':'Mar 26'};
+const MK={'2025-12':'Dic','2026-01':'Ene','2026-02':'Feb','2026-03':'Mar'};
+const MN={'12':'Diciembre','01':'Enero','02':'Febrero','03':'Marzo'};
+const tip={backgroundColor:C.blk,borderColor:'#D4C4A8',borderWidth:1,titleColor:'#FAF8F5',bodyColor:'#D4C4A8',titleFont:{family:'Jost',size:10,weight:'500'},bodyFont:{family:'Jost',size:10}};
+const scl={x:{grid:{color:'#DDD0B830'},ticks:{color:'#7a6545',font:{family:'Jost',size:9}}},y:{grid:{color:'#DDD0B830'},ticks:{color:'#7a6545',font:{family:'Jost',size:9}},min:0}};
+
+let cR=null,cD=null,cRe=null;
+
+// ══ GLOSARIO ACORDEON ══
+function tog(id){
+  const b=document.getElementById(id);
+  const a=document.getElementById('a_'+id);
+  const open=b.classList.toggle('open');
+  if(a){a.textContent=open?'&#8722;':'+';a.style.transform=open?'rotate(180deg)':'';}
+}
+
+// ══ RANKING TABS ══
+function setTab(i){
+  curTab=i;
+  [0,1,2,3].forEach(j=>{
+    document.getElementById('t'+j).classList.toggle('on',j===i);
+  });
+  renderTop5();
+}
+
+// Cache de imágenes para no repetir fetches
+const IMG_CACHE = {};
+
+async function loadImg(handle, imgEl, placeholder) {
+  if (IMG_CACHE[handle]) {
+    imgEl.src = IMG_CACHE[handle];
+    return;
+  }
+  try {
+    const r = await fetch(`https://baladigalamx.myshopify.com/products/${handle}.js`);
+    if (!r.ok) throw new Error('no response');
+    const d = await r.json();
+    const src = d.featured_image || (d.images && d.images[0]);
+    if (src) {
+      IMG_CACHE[handle] = src;
+      imgEl.src = src;
+    } else {
+      placeholder.style.background = '#EDE6D6';
+      imgEl.style.display = 'none';
+    }
+  } catch(e) {
+    placeholder.style.background = '#EDE6D6';
+    imgEl.style.display = 'none';
+  }
+}
+
+function renderTop5(){
+  const g=document.getElementById('top5g');
+  const n=document.getElementById('rnote');
+  if(!g)return;
+  const R=RNKS[curTab];
+  if(n)n.innerHTML=R.note;
+  g.innerHTML=R.items.map((p,i)=>{
+    const bw=Math.round(p.p/R.items[0].p*100);
+    const col=COLORS[i];
+    return `<div style="background:var(--cream);display:flex;flex-direction:column;">
+      <div id="ph_${i}" style="position:relative;aspect-ratio:1/1;overflow:hidden;background:#EDE6D6;display:flex;align-items:center;justify-content:center;">
+        <img id="img_${i}" src="" alt="${p.t}"
+          style="width:100%;height:100%;object-fit:cover;display:none;position:absolute;inset:0;">
+        <div style="font-family:var(--fu);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:center;padding:8px;opacity:.6" id="iname_${i}">${p.t}</div>
+        <div style="position:absolute;top:8px;left:8px;background:var(--blk);color:var(--cream);font-family:Jost,sans-serif;font-size:8px;letter-spacing:.16em;padding:3px 8px;font-weight:500">#${p.r}</div>
+        <div style="position:absolute;top:8px;right:8px;background:${col};color:#fff;font-family:Jost,sans-serif;font-size:8px;letter-spacing:.1em;padding:3px 8px;font-weight:600">${p.p.toFixed(1)}%</div>
+      </div>
+      <div style="padding:12px 14px 14px;flex:1;display:flex;flex-direction:column;gap:5px;">
+        <div style="font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:500">${i===0?'LIDER':'TOP '+(i+1)}</div>
+        <div style="font-family:'EB Garamond',serif;font-size:13px;font-weight:600;color:var(--esp);line-height:1.2">${p.t}</div>
+        <div style="font-family:'EB Garamond',serif;font-size:18px;font-weight:500;color:var(--text);margin-top:2px">${p.q.toLocaleString('es-MX')} uds</div>
+        <div style="background:var(--border);height:2px;width:100%;">
+          <div style="height:100%;width:${bw}%;background:${col};transition:width .5s ease;"></div>
+        </div>
+        <div style="font-size:9px;color:var(--muted)">${p.p.toFixed(1)}% del periodo &middot; ${R.total.toLocaleString('es-MX')} total</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Cargar imágenes de forma asíncrona tras renderizar el HTML
+  R.items.forEach((p,i) => {
+    const imgEl = document.getElementById('img_'+i);
+    const ph    = document.getElementById('ph_'+i);
+    const nm    = document.getElementById('iname_'+i);
+    if (!imgEl || !ph) return;
+    // Cuando la imagen carga, mostrarla y ocultar el placeholder de texto
+    imgEl.onload = () => {
+      imgEl.style.display = 'block';
+      if (nm) nm.style.display = 'none';
+    };
+    loadImg(p.h, imgEl, ph);
+  });
+}
+
+// ══ RENDER PRINCIPAL ══
+function render(){
+  const mM=aggM(META), mS=aggS(SH);
+  const MAR=META.filter(r=>r.d.startsWith('2026-03'));
+
+  const tSp=META.reduce((a,r)=>a+r.sp,0);
+  const tRv=META.reduce((a,r)=>a+r.rv,0);
+  const aR=tRv/tSp;
+  const mSp=MAR.reduce((a,r)=>a+r.sp,0);
+  const mR=MAR.reduce((a,r)=>a+r.rv,0)/mSp;
+  const tS=SH.reduce((a,r)=>a+r.s,0);
+  const tC=SH.reduce((a,r)=>a+r.c,0);
+  const tGP=tS-tC;
+  const mg=tGP/tS;
+
+  const onMths=['2026-01','2026-02','2026-03'];
+  const tOn=onMths.reduce((a,m)=>a+(ON[m]||0),0);
+  const tSpOn=onMths.reduce((a,m)=>a+(mM[m]?.sp||0),0);
+  const roasOn=tSpOn>0?tOn/tSpOn:0;
+
+  // ── KPIs ──
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi"><div class="kl">Gasto Meta</div><div class="kv">${f(tSp)}</div><div class="ks">Dic 25&ndash;Mar 26</div></div>
+    <div class="kpi"><div class="kl">ROAS Meta</div><div class="kv" style="color:${hcol(aR)}">${fr(aR)}</div><div class="ks">${f(tRv)} atribuido</div><div class="bdg ${aR>=3.5?'up':aR>=2.5?'ne':'dn'}">${aR>=3.5?'&#8593; Sobre obj.':aR>=2.5?'En rango':'&#8595; Bajo obj.'}</div></div>
+    <div class="kpi hl2"><div class="kl">ROAS Online</div><div class="kv" style="color:${roasOn>=3.5?'#8fbe6a':roasOn>=2.5?'#d4a84a':'#e07070'}">${fr(roasOn)}</div><div class="ks">Online Store / Meta Spend</div><div class="bdg ${roasOn>=3.5?'up':roasOn>=2.5?'ne':'dn'}">${roasOn>=3.5?'&#8593; S&oacute;lido':roasOn>=2.5?'En rango':'&#8595; Revisar'}</div></div>
+    <div class="kpi"><div class="kl">ROAS Marzo</div><div class="kv" style="color:${hcol(mR)}">${fr(mR)}</div><div class="ks">${f(mSp)} &middot; 18 d&iacute;as</div><div class="bdg warn">&#9888; En curso</div></div>
+    <div class="kpi"><div class="kl">Ventas Shopify</div><div class="kv">${f(tS)}</div><div class="ks">COGS ${f(tC)}</div></div>
+    <div class="kpi"><div class="kl">Ganancia Bruta</div><div class="kv" style="color:var(--pos)">${f(tGP)}</div><div class="ks">Margen ${fp(mg)}</div><div class="bdg ${(tGP-tSp)>0?'up':'dn'}">Neto ${f(tGP-tSp)}</div></div>
+  `;
+
+  // ── ROAS COMPARE ──
+  document.getElementById('rcmp').innerHTML=`
+    <div class="rcc">
+      <div class="rc-lbl">ROAS Meta Ads</div>
+      <div class="rc-val" style="color:${hcol(aR)};font-family:var(--fs)">${fr(aR)}</div>
+      <div class="rc-sub">Revenue atribuido por pixel &divide; Inversi&oacute;n Meta</div>
+      <div class="rc-def">Lo que Meta reporta haber generado. Atribuye ventas de todos los canales que tuvieron contacto con un anuncio. Puede sobreestimar el impacto real.</div>
+    </div>
+    <div class="rcc dk">
+      <div class="rc-lbl">ROAS Online</div>
+      <div class="rc-val" style="color:${roasOn>=3.5?'#8fbe6a':roasOn>=2.5?'#d4a84a':'#e07070'};font-family:var(--fs)">${fr(roasOn)}</div>
+      <div class="rc-sub">Ventas Online Store (Shopify) &divide; Inversi&oacute;n Meta</div>
+      <div class="rc-def">Solo ventas cerradas en la tienda web, sin TikTok Shop ni POS. La m&eacute;trica m&aacute;s conservadora: cu&aacute;nto gener&oacute; la tienda web por cada peso invertido en Meta.</div>
+    </div>
+  `;
+
+  // ── ROAS LINE CHART ──
+  const YRS=['2026','2025','2024','2023'];
+  const YC={'2026':{b:C.blk,d:false,w:2.5},'2025':{b:C.camel,d:true,w:1.8},'2024':{b:C.meta,d:true,w:1.5},'2023':{b:C.muted,d:true,w:1.2}};
+  document.getElementById('ypills').innerHTML=YRS.map(y=>`<div class="ypill"><div class="yline" style="background:${YC[y].b}"></div><span>${y==='2026'?y+' (actual)':y}</span></div>`).join('');
+  const a26=MONTHS.map(m=>{const d=mM[m];return d&&d.sp>0?+(d.rv/d.sp).toFixed(2):null;});
+  const ds=YRS.map((yr,i)=>({
+    label:yr,data:i===0?a26:MONTHS.map(m=>HIST.roas[yr][MK[m]]??null),
+    borderColor:YC[yr].b,backgroundColor:i===0?YC[yr].b+'10':'transparent',
+    borderWidth:YC[yr].w,borderDash:YC[yr].d?[5,4]:[],fill:i===0,
+    pointRadius:i===0?5:3,pointHoverRadius:6,tension:.35
+  }));
+  const rc=document.getElementById('cR').getContext('2d');
+  if(cR)cR.destroy();
+  cR=new Chart(rc,{type:'line',data:{labels:['Dic','Ene','Feb','Mar'],datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...tip,callbacks:{label:c=>` ${c.dataset.label}: ${c.raw!==null?c.raw+'x':'&#8212;'}`}}},
+      scales:{...scl,y:{...scl.y,ticks:{...scl.y.ticks,callback:v=>v+'x'}}},
+      interaction:{mode:'index',intersect:false}}});
+
+  // ── DAILY BAR ──
+  const dc=document.getElementById('cD').getContext('2d');
+  if(cD)cD.destroy();
+  cD=new Chart(dc,{type:'bar',data:{labels:MAR.map(r=>r.d.slice(8)),datasets:[{
+    data:MAR.map(r=>r.rs),borderRadius:1,borderWidth:1,
+    backgroundColor:MAR.map(r=>r.rs>=3.5?C.pos+'80':r.rs>=2?C.warm+'80':C.neg+'80'),
+    borderColor:MAR.map(r=>r.rs>=3.5?C.pos:r.rs>=2?C.warm:C.neg)}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...tip,callbacks:{title:c=>'Mar '+c[0].label,label:c=>` ROAS: ${c.raw.toFixed(2)}x`}}},
+      scales:{...scl,x:{...scl.x,ticks:{...scl.x.ticks,maxTicksLimit:9}},y:{...scl.y,ticks:{...scl.y.ticks,callback:v=>v+'x'}}}}});
+
+  // ── ROAS GRID ──
+  let rh=`<div class="rg"><div class="rgc hcol">Mes</div>${YRS.map(y=>`<div class="rgc hrow">${y}</div>`).join('')}`;
+  MONTHS.forEach((m,i)=>{
+    rh+=`<div class="rgc hcol" style="background:var(--cream)">${ML[m]}</div>`;
+    YRS.forEach(yr=>{
+      let v=null,sp=null;
+      if(yr==='2026'){const d=mM[m];if(d&&d.sp>0){v=d.rv/d.sp;sp=d.sp;}}
+      else{v=HIST.roas[yr][MK[m]]??null;sp=HIST.spend[yr][MK[m]]??null;}
+      rh+=`<div class="rgc"><div class="rgv ${hc(v)}">${v!==null?v.toFixed(2)+'x':'&mdash;'}</div><div class="rgs">${sp!==null?f(sp):''}</div></div>`;
+    });
+  });
+  document.getElementById('rgW').innerHTML=rh+'</div>';
+
+  // ── RENT CHART ──
+  const shM=MONTHS.filter(m=>mS[m]);
+  const reC=document.getElementById('cRe').getContext('2d');
+  if(cRe)cRe.destroy();
+  cRe=new Chart(reC,{type:'bar',data:{labels:shM.map(m=>ML[m]),datasets:[
+    {label:'Ventas',data:shM.map(m=>mS[m].s),backgroundColor:C.meta+'25',borderColor:C.meta,borderWidth:1.5,borderRadius:1},
+    {label:'COGS',data:shM.map(m=>mS[m].c),backgroundColor:C.neg+'20',borderColor:C.neg,borderWidth:1.5,borderRadius:1},
+    {label:'G. Bruta',data:shM.map(m=>mS[m].s-mS[m].c),backgroundColor:C.camel+'30',borderColor:C.camel,borderWidth:2,borderRadius:1}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#7a6545',font:{family:'Jost',size:10},boxWidth:10,padding:10}},tooltip:{...tip,callbacks:{label:c=>` ${c.dataset.label}: ${f(c.raw)}`}}},
+      scales:{...scl,y:{...scl.y,ticks:{...scl.y.ticks,callback:v=>f(v)}}}}});
+
+  // ── SUMMARY ──
+  const nA=tGP-tSp;
+  document.getElementById('ss').innerHTML=`
+    <div class="sr"><div class="slb">Ventas totales Shopify</div><div class="sv" style="color:#3d5a99">${f(tS)}</div></div>
+    <div class="sr"><div class="slb">Solo Online Store</div><div class="sv" style="color:var(--camel)">${f(tOn)}</div><div class="sd">${fp(tOn/tS)} del total</div></div>
+    <div class="sr"><div class="slb">COGS</div><div class="sv" style="color:var(--neg)">${f(tC)}</div></div>
+    <div class="sr"><div class="slb">Ganancia bruta</div><div class="sv">${f(tGP)}</div><div class="sd">Margen: ${fp(mg)}</div></div>
+    <div class="sr"><div class="slb">Gasto Meta Ads</div><div class="sv" style="color:#3d5a99">${f(tSp)}</div></div>
+    <div class="sr"><div class="slb">Profit Neto (Bruta &minus; Meta)</div><div class="sv" style="color:${nA>0?'var(--pos)':'var(--neg)'}">${f(nA)}</div></div>
+  `;
+
+  // ── TABLE ──
+  let rows='';let tS2=0,tC2=0,tSp2=0,tOn2=0;
+  MONTHS.forEach(m=>{
+    const sh=mS[m]||{s:0,c:0},me=mM[m]||{sp:0,rv:0};
+    const onSales=ON[m]||0;
+    const gp=sh.s-sh.c,mg2=sh.s>0?gp/sh.s:0,net=gp-me.sp;
+    const rMeta=me.sp>0?me.rv/me.sp:null;
+    const rOn=onSales>0&&me.sp>0?onSales/me.sp:null;
+    tS2+=sh.s;tC2+=sh.c;tSp2+=me.sp;tOn2+=onSales;
+    const iM=m==='2026-03',mo=m.slice(5,7),yr=m.slice(0,4);
+    const mc=mg2>=.45?'var(--pos)':mg2>=.3?C.warm:'var(--neg)';
+    const noDec=m==='2025-12';
+    rows+=`<tr${iM?' style="background:var(--cream2)"':''}>
+      <td><div class="mc">${MN[mo]||mo}${iM?' <span style="font-size:8px;font-family:Jost;letter-spacing:.06em;color:var(--muted)">EN CURSO</span>':''}</div><span class="my">${yr}</span></td>
+      <td style="color:#3d5a99">${sh.s>0?f(sh.s):'&mdash;'}</td>
+      <td style="color:var(--camel)">${noDec?'&mdash;':f(onSales)}</td>
+      <td style="color:var(--neg)">${sh.c>0?f(sh.c):'&mdash;'}</td>
+      <td style="color:${C.warm};font-weight:600">${sh.s>0?f(gp):'&mdash;'}</td>
+      <td>${sh.s>0?`<div class="mbw"><div class="mbar"><div class="mfill" style="width:${Math.min(mg2*100,100).toFixed(0)}%;background:${mc}"></div></div><span style="color:${mc};font-family:var(--fs);font-size:11px">${fp(mg2)}</span></div>`:'&mdash;'}</td>
+      <td style="color:#3d5a99">${f(me.sp)}</td>
+      <td style="color:${hcol(rMeta)}">${fr(rMeta)}</td>
+      <td style="color:${hcol(rOn)};font-weight:600">${noDec?'&mdash;':fr(rOn)}</td>
+      <td style="color:${net>0?'var(--pos)':'var(--neg)'};font-weight:600">${sh.s>0?f(net):'&mdash;'}</td>
+    </tr>`;
+  });
+  const tG=tS2-tC2,tN=tG-tSp2,tMg=tS2>0?tG/tS2:0;
+  const tRM=META.reduce((a,r)=>a+r.rv,0)/tSp2;
+  const tSpOn2=['2026-01','2026-02','2026-03'].reduce((a,m)=>a+(mM[m]?.sp||0),0);
+  const tRO=tSpOn2>0?tOn2/tSpOn2:null;
+  rows+=`<tr>
+    <td><div class="mc">Total</div><span class="my">Dic 25&ndash;Mar 26</span></td>
+    <td style="color:#3d5a99;font-weight:600">${f(tS2)}</td>
+    <td style="color:var(--camel);font-weight:600">${f(tOn2)}</td>
+    <td style="color:var(--neg);font-weight:600">${f(tC2)}</td>
+    <td style="font-weight:700;color:${C.warm}">${f(tG)}</td>
+    <td><div class="mbw"><div class="mbar"><div class="mfill" style="width:${Math.min(tMg*100,100).toFixed(0)}%;background:var(--camel)"></div></div><span style="color:var(--camel);font-family:var(--fs);font-size:11px">${fp(tMg)}</span></div></td>
+    <td style="color:#3d5a99;font-weight:600">${f(tSp2)}</td>
+    <td style="color:${hcol(tRM)};font-weight:700">${fr(tRM)}</td>
+    <td style="color:${hcol(tRO)};font-weight:700">${fr(tRO)}</td>
+    <td style="font-weight:700;color:${tN>0?'var(--pos)':'var(--neg)'}">${f(tN)}</td>
+  </tr>`;
+  document.getElementById('rb').innerHTML=rows;
+
+  const now=new Date();
+  document.getElementById('upd').textContent='Actualizado '+now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('ds').textContent=now.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+// ══ REFRESH ══
+function doRefresh(){
+  const b=document.getElementById('btnR'),i=document.getElementById('ri');
+  b.disabled=true;i.classList.add('spin');
+  setTimeout(()=>{render();renderTop5();b.disabled=false;i.classList.remove('spin');},600);
+}
+
+// ══ AUTO-REFRESH cada 30 min ══
+function init(){
+  render();
+  renderTop5();
+  setInterval(doRefresh, 30*60*1000);
+}
+</script>
+</body>
+</html>
